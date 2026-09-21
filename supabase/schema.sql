@@ -102,6 +102,15 @@ insert into storage.buckets (id, name, public)
 values ('style-diary', 'style-diary', true)
 on conflict (id) do nothing;
 
+-- 桶级护栏：单文件最大 5MB，且只接受图片类型。
+-- 采用"开放注册"（谁能拿到网址谁就能建账号）时，这道限制可以防止有人
+-- 用注册来的账号往桶里灌大文件或非图片内容，把你的免费存储额度（1GB）耗尽。
+-- 本项目上传前会把图片压到长边 1600px 的 JPEG（通常 200~400KB），5MB 绰绰有余。
+update storage.buckets
+   set file_size_limit = 5242880, -- 5MB
+       allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
+ where id = 'style-diary';
+
 drop policy if exists "style_diary_images_insert" on storage.objects;
 create policy "style_diary_images_insert" on storage.objects
   for insert to authenticated
