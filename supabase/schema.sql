@@ -110,6 +110,19 @@ create policy "style_diary_images_insert" on storage.objects
     and (storage.foldername(name))[1] = auth.uid()::text
   );
 
+-- 读取策略：Storage 的 delete / move 操作除了 delete / update 权限之外，
+-- 还需要能 select 到目标对象本身（API 内部会先查一次元数据再动手）。
+-- 少了这条，"删除记录后清理云端图片"会静默失败：API 返回 200 + 空数组
+-- （一个对象都没删）、也不报错，界面上完全看不出异常，只会留下孤儿图片。
+-- 因此这一条务必保留。
+drop policy if exists "style_diary_images_select" on storage.objects;
+create policy "style_diary_images_select" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'style-diary'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
 drop policy if exists "style_diary_images_update" on storage.objects;
 create policy "style_diary_images_update" on storage.objects
   for update to authenticated

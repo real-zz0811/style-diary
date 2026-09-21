@@ -128,8 +128,19 @@ export async function removeImageByUrl(url: string): Promise<void> {
   const path = getStoragePathFromUrl(url);
   if (!path) return;
 
-  const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+  const { data, error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
+
   if (error) {
     console.warn('删除图片失败（不影响使用，可在 Supabase Storage 里手动清理）：', error.message);
+    return;
+  }
+
+  // 缺少 storage.objects 的 select 策略时，删除接口既不报错、也不真删：
+  // 它会返回 200 + 空数组，静悄悄地留下孤儿图片。补一条可排查的线索。
+  if (!data || data.length === 0) {
+    console.warn(
+      '图片没有被云端删除（Storage 可能缺少 select 策略，重跑 supabase/schema.sql 可修复）：',
+      path
+    );
   }
 }

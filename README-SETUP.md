@@ -118,7 +118,15 @@ VITE_SUPABASE_ANON_KEY=在这里粘贴你的 anon / publishable key
 
 左侧 **Authentication → Providers → Email** → 把 **Confirm email** **关闭**。
 
-原因：默认开启时，每次注册都要去邮箱点确认链接才能登录。自己用太折腾（收信延迟、进垃圾邮件很常见）。关掉后注册完直接就能登录。
+原因（按重要性）：
+
+1. **内置邮件服务只允许发到"团队成员邮箱"**。未配置自定义 SMTP 时，Supabase 官方文档写明：*"Supabase Auth will refuse to deliver messages to addresses that are not part of the project's team … All other addresses will fail with the error message `Email address not authorized`"*。也就是说，除非注册用的邮箱恰好是你 Supabase 组织成员名单里的邮箱，那封确认邮件**根本发不出去** —— 账号永远停在"未确认"状态，界面看着注册成功，却一直登不进去，而且重发也没用。
+2. **每小时最多 2 封**（官方 Rate limits 页：*"2 emails per hour with the built-in email provider"*），官方对送达率与可用性不做任何保证，进垃圾箱很常见。
+3. **本项目没有"补发确认邮件 / 忘记密码"页面**，邮件一旦没收到就没有任何自救入口。
+
+关掉之后，注册请求会直接带回登录会话，注册完马上就能用。
+
+> ⚠️ 关掉它只是不再校验"这个邮箱真的属于你"。安全防线在别处：三张表的 RLS 策略（`auth.uid() = user_id`）保证每个账号只看得到自己的记录，Storage 只能写入 `{自己 user_id}/` 目录；等你注册完自己的账号，再到 Authentication → Sign In / Providers 关掉 **Allow new users to sign up**，就再也没人能注册了。
 
 ---
 
@@ -186,7 +194,7 @@ npm run build      # 产出 dist/ 文件夹
 | **闲置暂停** | 免费项目长期无人访问会被自动暂停，**数据不会丢**，登录控制台点一下即可唤醒 |
 | **图片自动压缩** | 上传的图片和搭配长图会自动压到长边 1600px / JPEG 质量 0.85，体积减少 90% 以上，显示效果几乎无差别 |
 | **删除记录** | 手机长按图片 / 电脑在图片上点右键即可删除，记录与云端图片一起清理；图片删不掉只会留一条控制台警告，不影响记录本身已删除 |
-| **图片残留** | 极端情况（网络中断、Storage 权限异常）下云端图片可能没删干净，不影响使用，可在 Supabase → Storage 里手动清理 |
+| **图片残留** | 若发现"删了记录、云端图片还在"，几乎都是 `storage.objects` 少了 select 策略（删除接口内部要先读到目标对象才会动手），把最新 `supabase/schema.sql` 重跑一遍即可。历史遗留的孤儿图片在 Supabase → Storage 里手动清理 |
 | **密码** | 忘记密码需要邮箱重置功能，目前界面未提供入口，可到 Supabase 控制台 → Authentication → Users 里处理 |
 
 ---
@@ -198,6 +206,10 @@ A：多半是没执行 `supabase/schema.sql`（表不存在），或者 anon key
 
 **Q：注册后提示「邮箱还没验证」？**
 A：第三节 3.5 没关掉 Confirm email。去 Supabase 关掉，或者去邮箱点确认链接。
+
+**Q：删了记录之后，云端 Storage 里怎么还能看到那张图？**
+A：说明 `storage.objects` 上缺少 select 策略。Storage 的删除接口会先查一次目标对象的元数据（受 RLS `select` 策略约束），查不到候选对象时它会**返回 200 + 空数组**、不报错也不删任何东西 —— 所以界面上一切正常，图片却留在了桶里。解决：把最新的 `supabase/schema.sql` 重新粘进 SQL Editor 跑一遍（脚本可重复执行），之后再删记录就会连图片一起清掉。
+清理历史遗留的孤儿图片请在 Supabase → Storage → `style-diary` 界面里删，**不要用 SQL 删 `storage.objects` 的行**：官方明确说明那只删元数据，文件依旧留在底层存储里继续占额度。
 
 **Q：以前浏览器里存的数据去哪了？**
 A：旧数据仍在浏览器的本地存储里，未被删除。登录后页面顶部会出现「检测到本机有 N 条旧记录尚未上云」的横幅，点「导入到云端」即可把它们连同图片一起搬到云端账号下（实现见 `src/lib/migrateLocalData.ts` 与 `src/components/LegacyMigrationBanner.tsx`）。全部导入成功才会清掉本地旧数据，失败会保留以便重试。
