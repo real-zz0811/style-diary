@@ -3,6 +3,7 @@ import { Loader2, Plus, Palette } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { ImageUpload } from '../components/ImageUpload';
 import { useClothingCloud } from '../hooks/useCloudData';
+import { useLongPress } from '../hooks/useLongPress';
 import { generateId } from '../lib/id';
 import {
   accessoryPositionLabels,
@@ -22,11 +23,16 @@ const createEmptyForm = () => ({
 });
 
 export function WardrobePage() {
-  const { items: clothing, isLoading, error, add } = useClothingCloud();
+  const { items: clothing, isLoading, error, add, remove } = useClothingCloud();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(createEmptyForm);
   const [uploadError, setUploadError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // 长按 / 右键删除：先弹确认框，确认后再删记录并清理云端图片
+  const [deleteTarget, setDeleteTarget] = useState<Clothing | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const handleSave = async () => {
     if (!formData.imageUrl || !formData.name.trim() || isSaving) return;
@@ -63,10 +69,42 @@ export function WardrobePage() {
     setUploadError('');
   };
 
+  const handleRequestDelete = (item: Clothing) => {
+    setDeleteError('');
+    setDeleteTarget(item);
+  };
+
+  const handleCloseDelete = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || isDeleting) return;
+
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      // 先确认云端删除成功，再收起确认框
+      await remove(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : '删除失败，请重试');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-full">
       <div className="px-6 py-5 flex items-center justify-between">
-        <h2 className="font-serif text-2xl text-[#2C2C2C]">我的衣橱</h2>
+        <div>
+          <h2 className="font-serif text-2xl text-[#2C2C2C]">我的衣橱</h2>
+          {clothing.length > 0 && (
+            <p className="mt-1 text-xs text-[#2C2C2C]/35">长按图片（电脑上可右键）可删除</p>
+          )}
+        </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="w-10 h-10 rounded-full bg-[#2C2C2C] flex items-center justify-center hover:bg-[#2C2C2C]/90 transition-colors"
@@ -96,23 +134,7 @@ export function WardrobePage() {
       ) : (
         <div className="px-4 pb-6 grid grid-cols-2 gap-3">
           {clothing.map((item) => (
-            <div
-              key={item.id}
-              className="bg-[#F5F0E8] rounded-xl overflow-hidden"
-            >
-              <div className="aspect-[4/5] overflow-hidden">
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="px-3 py-2.5">
-                <span className="text-xs text-[#2C2C2C]/60">
-                  {getClothingLabel(item)}
-                </span>
-              </div>
-            </div>
+            <ClothingCard key={item.id} item={item} onRequestDelete={handleRequestDelete} />
           ))}
         </div>
       )}
@@ -209,6 +231,69 @@ export function WardrobePage() {
           </button>
         </div>
       </Modal>
+
+      <Modal isOpen={deleteTarget !== null} onClose={handleCloseDelete} title="删除单品">
+        <div className="space-y-5">
+          <p className="text-sm text-[#2C2C2C]/70 leading-relaxed">
+            确定删除「{deleteTarget?.name}」吗？云端图片会一起清理，此操作不可撤销。
+          </p>
+          <p className="text-xs text-[#2C2C2C]/40 leading-relaxed">
+            用它合成过的搭配长图是独立文件，不受影响，历史搭配记录仍可正常查看。
+          </p>
+
+          {deleteError && (
+            <p className="px-4 py-3 rounded-lg bg-[#F5F0E8] text-sm text-[#B4553F] leading-relaxed">
+              {deleteError}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleCloseDelete}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full border border-[#2C2C2C]/20 text-sm font-medium text-[#2C2C2C]/70 hover:border-[#2C2C2C]/40 disabled:opacity-40 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleConfirmDelete()}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full bg-[#B4553F] text-white text-sm font-medium tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#B4553F]/90 transition-colors"
+            >
+              {isDeleting ? '删除中…' : '删除'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
+function ClothingCard({
+  item,
+  onRequestDelete,
+}: {
+  item: Clothing;
+  onRequestDelete: (item: Clothing) => void;
+}) {
+  // 手机长按图片、电脑右键图片，都会打开删除确认框
+  const { longPressProps } = useLongPress({ onTrigger: () => onRequestDelete(item) });
+
+  return (
+    <div className="bg-[#F5F0E8] rounded-xl overflow-hidden">
+      <div {...longPressProps} className="longpress-area aspect-[4/5] overflow-hidden">
+        <img
+          src={item.imageUrl}
+          alt={item.name}
+          draggable={false}
+          className="w-full h-full object-cover"
+        />
+      </div>
+      <div className="px-3 py-2.5">
+        <span className="text-xs text-[#2C2C2C]/60">{getClothingLabel(item)}</span>
+      </div>
     </div>
   );
 }

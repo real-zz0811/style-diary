@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { Shirt, Eye, Download, X, Loader2 } from 'lucide-react';
+import { Modal } from '../components/Modal';
 import { useClothingCloud, useOutfitsCloud } from '../hooks/useCloudData';
+import { useLongPress } from '../hooks/useLongPress';
 import { generateId } from '../lib/id';
 import { uploadDataUrl } from '../lib/imageStorage';
 import { useAuth } from '../contexts/AuthContext';
@@ -92,7 +94,7 @@ export function OutfitWorkshopPage() {
     isLoading: isClothingLoading,
     error: clothingError,
   } = useClothingCloud();
-  const { items: outfits, add: addOutfit } = useOutfitsCloud();
+  const { items: outfits, add: addOutfit, remove: removeOutfit } = useOutfitsCloud();
   const [slots, setSlots] = useState<Record<OutfitSlotKey, Clothing | null>>({
     top: null,
     bottom: null,
@@ -104,6 +106,11 @@ export function OutfitWorkshopPage() {
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // 长按 / 右键历史搭配缩略图即可删除（只删长图，成分布料照片属于单品记录）
+  const [deleteTarget, setDeleteTarget] = useState<Outfit | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const filledSlotCount = outfitSlotOrder.filter((key) => slots[key]).length;
@@ -126,6 +133,33 @@ export function OutfitWorkshopPage() {
   const handleClearSlot = (key: OutfitSlotKey, e: React.MouseEvent) => {
     e.stopPropagation();
     setSlots((prev) => ({ ...prev, [key]: null }));
+  };
+
+  const handleRequestDelete = (outfit: Outfit) => {
+    setDeleteError('');
+    setDeleteTarget(outfit);
+  };
+
+  const handleCloseDelete = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || isDeleting) return;
+
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      // 只删这条搭配记录与它的合成长图，成分布料照片属于单品记录，不受影响
+      await removeOutfit(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : '删除失败，请重试');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const renderSlot = (key: OutfitSlotKey, isAccessory = false) => (
@@ -436,23 +470,16 @@ export function OutfitWorkshopPage() {
       {/* History */}
       {savedOutfits.length > 0 && (
         <div className="px-4 mt-8 pb-6">
-          <h3 className="text-sm font-medium text-[#2C2C2C] mb-3">历史搭配记录</h3>
+          <h3 className="text-sm font-medium text-[#2C2C2C]">历史搭配记录</h3>
+          <p className="mt-1 mb-3 text-xs text-[#2C2C2C]/35">长按图片（电脑上可右键）可删除</p>
           <div className="grid grid-cols-3 gap-3">
             {savedOutfits.map((outfit) => (
-              <button
+              <OutfitHistoryCard
                 key={outfit.id}
-                onClick={() => setLightboxImage(outfit.compositeImageUrl!)}
-                className="aspect-[3/4] rounded-xl overflow-hidden bg-[#F5F0E8] relative group"
-              >
-                <img
-                  src={outfit.compositeImageUrl}
-                  alt="搭配"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                  <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
-                </div>
-              </button>
+                outfit={outfit}
+                onOpen={() => setLightboxImage(outfit.compositeImageUrl!)}
+                onRequestDelete={handleRequestDelete}
+              />
             ))}
           </div>
         </div>
@@ -519,6 +546,80 @@ export function OutfitWorkshopPage() {
 
       {/* Hidden Canvas */}
       <canvas ref={canvasRef} className="hidden" />
+
+      <Modal isOpen={deleteTarget !== null} onClose={handleCloseDelete} title="删除搭配">
+        <div className="space-y-5">
+          <p className="text-sm text-[#2C2C2C]/70 leading-relaxed">
+            确定删除这条搭配记录吗？云端的长图会一起清理，此操作不可撤销。
+          </p>
+          <p className="text-xs text-[#2C2C2C]/40 leading-relaxed">
+            组成这条搭配的单品照片属于衣橱里的单品，不会被删除。
+          </p>
+
+          {deleteError && (
+            <p className="px-4 py-3 rounded-lg bg-[#F5F0E8] text-sm text-[#B4553F] leading-relaxed">
+              {deleteError}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleCloseDelete}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full border border-[#2C2C2C]/20 text-sm font-medium text-[#2C2C2C]/70 hover:border-[#2C2C2C]/40 disabled:opacity-40 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleConfirmDelete()}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full bg-[#B4553F] text-white text-sm font-medium tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#B4553F]/90 transition-colors"
+            >
+              {isDeleting ? '删除中…' : '删除'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
+  );
+}
+
+function OutfitHistoryCard({
+  outfit,
+  onOpen,
+  onRequestDelete,
+}: {
+  outfit: Outfit;
+  onOpen: () => void;
+  onRequestDelete: (outfit: Outfit) => void;
+}) {
+  // 手机长按图片、电脑右键图片，都会打开删除确认框
+  const { longPressProps, shouldSuppressClick } = useLongPress({
+    onTrigger: () => onRequestDelete(outfit),
+  });
+
+  return (
+    <button
+      type="button"
+      {...longPressProps}
+      onClick={() => {
+        // 长按抬手时浏览器还会补一次 click，这里吞掉，否则会顺手打开大图
+        if (shouldSuppressClick()) return;
+        onOpen();
+      }}
+      className="longpress-area aspect-[3/4] rounded-xl overflow-hidden bg-[#F5F0E8] relative group"
+    >
+      <img
+        src={outfit.compositeImageUrl}
+        alt="搭配"
+        draggable={false}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+        <Eye className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+      </div>
+    </button>
   );
 }

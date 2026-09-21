@@ -55,8 +55,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUp = useCallback(async (email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw new Error(translateAuthError(error.message));
+
+    // 没拿到会话说明还没真正登录，必须给出明确原因，
+    // 否则用户点了"注册并登录"却什么都不发生。
+    if (!data.session) {
+      // 邮箱已注册过时，Supabase 为了防止探测账号，也会"成功"返回但不给会话，
+      // 特征就是 identities 为空数组
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new Error('这个邮箱已经注册过了，请切换到"登录"');
+      }
+      throw new Error(
+        '注册成功，请先点邮箱里的确认链接再登录（或在 Supabase 控制台关闭 Confirm email 免去这一步）'
+      );
+    }
   }, []);
 
   const signIn = useCallback(async (email: string, password: string) => {

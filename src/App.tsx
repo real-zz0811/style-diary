@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { Loader2, LogOut, Settings } from 'lucide-react';
 import { BottomNavigation, TabId } from './components/BottomNavigation';
+import { LegacyMigrationBanner } from './components/LegacyMigrationBanner';
 import { WardrobePage } from './pages/WardrobePage';
 import { OutfitWorkshopPage } from './pages/OutfitWorkshopPage';
 import { InspirationWallPage } from './pages/InspirationWallPage';
@@ -84,6 +85,7 @@ function DiaryApp() {
 
       <main className="pt-16 pb-20 min-h-screen">
         <div className="max-w-md mx-auto">
+          <LegacyMigrationBanner />
           {renderPage()}
         </div>
       </main>

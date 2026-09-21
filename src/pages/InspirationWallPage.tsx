@@ -3,11 +3,18 @@ import { Loader2, Plus, Sparkles } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { ImageUpload } from '../components/ImageUpload';
 import { useInspirationsCloud } from '../hooks/useCloudData';
+import { useLongPress } from '../hooks/useLongPress';
 import { generateId } from '../lib/id';
 import type { Inspiration } from '../types';
 
 export function InspirationWallPage() {
-  const { items: inspirations, isLoading, error: loadError, add } = useInspirationsCloud();
+  const {
+    items: inspirations,
+    isLoading,
+    error: loadError,
+    add,
+    remove,
+  } = useInspirationsCloud();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     imageUrl: '',
@@ -15,6 +22,11 @@ export function InspirationWallPage() {
   });
   const [saveError, setSaveError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // 长按 / 右键删除：先弹确认框，确认后再删记录并清理云端图片
+  const [deleteTarget, setDeleteTarget] = useState<Inspiration | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   const handleSave = async () => {
     if (!formData.imageUrl || isSaving) return;
@@ -46,6 +58,33 @@ export function InspirationWallPage() {
     setSaveError('');
   };
 
+  const handleRequestDelete = (item: Inspiration) => {
+    setDeleteError('');
+    setDeleteTarget(item);
+  };
+
+  const handleCloseDelete = () => {
+    if (isDeleting) return;
+    setDeleteTarget(null);
+    setDeleteError('');
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget || isDeleting) return;
+
+    setIsDeleting(true);
+    setDeleteError('');
+    try {
+      // 先确认云端删除成功，再收起确认框
+      await remove(deleteTarget.id);
+      setDeleteTarget(null);
+    } catch (err) {
+      setDeleteError(err instanceof Error ? err.message : '删除失败，请重试');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // Split into two columns for masonry layout
   const leftColumn: Inspiration[] = [];
   const rightColumn: Inspiration[] = [];
@@ -57,7 +96,12 @@ export function InspirationWallPage() {
   return (
     <div className="min-h-full">
       <div className="px-6 py-5 flex items-center justify-between">
-        <h2 className="font-serif text-2xl text-[#2C2C2C]">灵感墙</h2>
+        <div>
+          <h2 className="font-serif text-2xl text-[#2C2C2C]">灵感墙</h2>
+          {inspirations.length > 0 && (
+            <p className="mt-1 text-xs text-[#2C2C2C]/35">长按图片（电脑上可右键）可删除</p>
+          )}
+        </div>
         <button
           onClick={() => setIsModalOpen(true)}
           className="w-10 h-10 rounded-full bg-[#2C2C2C] flex items-center justify-center hover:bg-[#2C2C2C]/90 transition-colors"
@@ -89,13 +133,23 @@ export function InspirationWallPage() {
           {/* Left Column */}
           <div className="flex-1 flex flex-col gap-3">
             {leftColumn.map((item, idx) => (
-              <InspirationCard key={item.id} item={item} index={idx * 2} />
+              <InspirationCard
+                key={item.id}
+                item={item}
+                index={idx * 2}
+                onRequestDelete={handleRequestDelete}
+              />
             ))}
           </div>
           {/* Right Column */}
           <div className="flex-1 flex flex-col gap-3">
             {rightColumn.map((item, idx) => (
-              <InspirationCard key={item.id} item={item} index={idx * 2 + 1} />
+              <InspirationCard
+                key={item.id}
+                item={item}
+                index={idx * 2 + 1}
+                onRequestDelete={handleRequestDelete}
+              />
             ))}
           </div>
         </div>
@@ -142,21 +196,70 @@ export function InspirationWallPage() {
           </button>
         </div>
       </Modal>
+
+      <Modal isOpen={deleteTarget !== null} onClose={handleCloseDelete} title="删除灵感">
+        <div className="space-y-5">
+          <p className="text-sm text-[#2C2C2C]/70 leading-relaxed">
+            确定删除这张灵感图吗？云端图片会一起清理，此操作不可撤销。
+          </p>
+
+          {deleteError && (
+            <p className="px-4 py-3 rounded-lg bg-[#F5F0E8] text-sm text-[#B4553F] leading-relaxed">
+              {deleteError}
+            </p>
+          )}
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleCloseDelete}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full border border-[#2C2C2C]/20 text-sm font-medium text-[#2C2C2C]/70 hover:border-[#2C2C2C]/40 disabled:opacity-40 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              type="button"
+              onClick={() => void handleConfirmDelete()}
+              disabled={isDeleting}
+              className="flex-1 py-3.5 rounded-full bg-[#B4553F] text-white text-sm font-medium tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#B4553F]/90 transition-colors"
+            >
+              {isDeleting ? '删除中…' : '删除'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
 
-function InspirationCard({ item, index }: { item: Inspiration; index: number }) {
+function InspirationCard({
+  item,
+  index,
+  onRequestDelete,
+}: {
+  item: Inspiration;
+  index: number;
+  onRequestDelete: (item: Inspiration) => void;
+}) {
   // Alternate between different aspect ratios for masonry effect
   const aspectRatios = ['3/4', '4/5', '1/1', '4/3'];
   const aspectRatio = aspectRatios[index % aspectRatios.length];
 
+  // 手机长按图片、电脑右键图片，都会打开删除确认框
+  const { longPressProps } = useLongPress({ onTrigger: () => onRequestDelete(item) });
+
   return (
     <div className="bg-[#F5F0E8] rounded-xl overflow-hidden">
-      <div className={`overflow-hidden aspect-[${aspectRatio}]`} style={{ aspectRatio }}>
+      <div
+        {...longPressProps}
+        className={`longpress-area overflow-hidden aspect-[${aspectRatio}]`}
+        style={{ aspectRatio }}
+      >
         <img
           src={item.imageUrl}
           alt={item.note || '灵感'}
+          draggable={false}
           className="w-full h-full object-cover"
         />
       </div>

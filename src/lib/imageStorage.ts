@@ -120,13 +120,16 @@ export function getStoragePathFromUrl(url: string): string | null {
   return path ? decodeURIComponent(path) : null;
 }
 
-/** 删除已上传的图片；失败不抛错（清理由记录删除主导，图片残留不影响使用） */
+/**
+ * 删除已上传的图片；失败不抛错（记录已经删掉了，图片残留不影响使用，
+ * 因此只记一条警告，绝不让界面操作失败）
+ */
 export async function removeImageByUrl(url: string): Promise<void> {
   const path = getStoragePathFromUrl(url);
   if (!path) return;
 
   const { error } = await supabase.storage.from(STORAGE_BUCKET).remove([path]);
   if (error) {
-    console.error('删除图片失败：', error.message);
+    console.warn('删除图片失败（不影响使用，可在 Supabase Storage 里手动清理）：', error.message);
   }
 }

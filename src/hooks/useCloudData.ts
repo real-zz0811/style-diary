@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { removeImageByUrl } from '../lib/imageStorage';
 import { useAuth } from '../contexts/AuthContext';
 import type {
   AccessoryPosition,
@@ -41,16 +42,27 @@ function toReadableError(message: string, fallback: string): string {
  * 读取当前登录用户的全部记录（行级安全策略保证只能拿到自己的数据），
  * 并支持新增与删除。写入采用"先落库、再更新界面"的顺序，
  * 避免出现本地显示成功、云端其实没存上的情况。
+ *
+ * 删除记录后会顺手清理该记录占用的云端图片（见 getImageUrls），
+ * 失败只记警告，不影响记录本身已删除的事实。
  */
 function useCloudCollection<T extends { id: string }>(
   table: CloudTable,
   mapRowToItem: (row: CloudRow) => T,
-  mapItemToRow: (item: T, userId: string) => CloudRow
+  mapItemToRow: (item: T, userId: string) => CloudRow,
+  getImageUrls: (item: T) => string[]
 ): CloudCollection<T> {
   const { user } = useAuth();
   const [items, setItems] = useState<T[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // 删除记录前要先读到它携带的图片地址，用 ref 存一份最新列表，
+  // 这样不必把 items 写进 useCallback 依赖，回调保持稳定
+  const itemsRef = useRef<T[]>([]);
+  useEffect(() => {
+    itemsRef.current = items;
+  }, [items]);
 
   const reload = useCallback(async () => {
     if (!user) {
@@ -100,12 +112,23 @@ function useCloudCollection<T extends { id: string }>(
     async (id: string) => {
       if (!user) throw new Error('请先登录');
 
+      const target = itemsRef.current.find((item) => item.id === id);
+
       const { error: deleteError } = await supabase.from(table).delete().eq('id', id);
       if (deleteError) throw new Error(toReadableError(deleteError.message, '删除失败'));
 
       setItems((prev) => prev.filter((item) => item.id !== id));
+
+      // 记录已经删掉了，再顺手清理它占用的云端图片。
+      // 故意不 await：图片删除失败不该让用户以为"记录没删掉"，
+      // removeImageByUrl 内部也只记一条警告，不会抛错。
+      if (target) {
+        for (const url of getImageUrls(target)) {
+          void removeImageByUrl(url);
+        }
+      }
     },
-    [table, user]
+    [table, user, getImageUrls]
   );
 
   return { items, isLoading, error, add, remove, reload };
@@ -188,20 +211,39 @@ const mapInspirationToRow = (item: Inspiration, userId: string): CloudRow => ({
 });
 
 /* ------------------------------------------------------------------
+ * 每条记录占用了哪些云端图片：删除记录时按这里的返回结果清理
+ *
+ * 搭配记录只清理自己的合成长图 —— 长图是独立文件，里面出现的单品照片
+ * 属于单品记录，绝不能跟着一起删。同样放在模块级保持引用稳定。
+ * ------------------------------------------------------------------ */
+
+const getClothingImageUrls = (item: Clothing): string[] => [item.imageUrl];
+
+const getOutfitImageUrls = (item: Outfit): string[] =>
+  item.compositeImageUrl ? [item.compositeImageUrl] : [];
+
+const getInspirationImageUrls = (item: Inspiration): string[] => [item.imageUrl];
+
+/* ------------------------------------------------------------------
  * 三个业务 hook
  * ------------------------------------------------------------------ */
 
 /** 衣橱单品 */
 export function useClothingCloud(): CloudCollection<Clothing> {
-  return useCloudCollection('clothing', mapClothingRow, mapClothingToRow);
+  return useCloudCollection('clothing', mapClothingRow, mapClothingToRow, getClothingImageUrls);
 }
 
 /** 搭配记录（含合成长图地址） */
 export function useOutfitsCloud(): CloudCollection<Outfit> {
-  return useCloudCollection('outfits', mapOutfitRow, mapOutfitToRow);
+  return useCloudCollection('outfits', mapOutfitRow, mapOutfitToRow, getOutfitImageUrls);
 }
 
 /** 灵感墙 */
 export function useInspirationsCloud(): CloudCollection<Inspiration> {
-  return useCloudCollection('inspirations', mapInspirationRow, mapInspirationToRow);
+  return useCloudCollection(
+    'inspirations',
+    mapInspirationRow,
+    mapInspirationToRow,
+    getInspirationImageUrls
+  );
 }

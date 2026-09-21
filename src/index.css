@@ -24,6 +24,17 @@
   .font-serif {
     font-family: 'Playfair Display', Georgia, serif;
   }
+
+  /**
+   * 长按删除手势生效的区域。
+   * 关掉长按选中文字与 iOS 长按图片弹出的"存储图像"菜单，
+   * 否则系统弹层会盖住我们自己的确认框。
+   */
+  .longpress-area {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
 }
 
 @keyframes slide-up {

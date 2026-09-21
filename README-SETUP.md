@@ -57,12 +57,30 @@ npm run preview     # 本地预览打包结果
 
 ### 3.2 取得两个配置值
 
-在项目页面里找 **Connect** 按钮（右上角），或走 **Project Settings（齿轮）→ API Keys**：
+**路线 A：右上角 Connect 按钮**（最快）
+
+1. 点项目页面右上角的 **Connect**（图标像插头/连接）
+2. 左侧四个标签里点 **Framework**
+3. 下方 **Follow these steps → 2 Add files** 的标签行里点 **`.env.local`**
+4. 点那个代码块**右侧的复制图标**（会整段复制），或鼠标框选整段后按 Ctrl+C，粘贴到记事本就能看到完整的两行值
+
+> ⚠️ 这个弹窗里的**框架下拉框默认可能是 Next.js**，那样变量名会显示成 `NEXT_PUBLIC_SUPABASE_URL` /
+> `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`。**名字不重要，值才是重点** —— 把 `=` 后面的值复制到我们
+> 项目的 `.env.local` 里对应变量即可。想看 Vite 风格的名字，把下拉框切成 `Vite`/`React` 即可。
+
+**路线 B：直连设置页**
+
+打开 https://supabase.com/dashboard/project/kjrudrlhcynhfnsuqfds/settings/api-keys
+
+- 新版界面：**Publishable key** 区块就是它（`sb_publishable_…`）
+- 若看不到，点同页的 **Legacy API keys** 标签，里面的 **anon / public** 那一行（`eyJ…`）也一样能用
 
 | 要复制的 | 长什么样 | 用途 |
 |---|---|---|
 | **Project URL** | `https://xxxxxxxx.supabase.co` | 定位你的项目 |
 | **anon / publishable** key | 以 `eyJ` 开头的一长串，或 `sb_publishable_` 开头 | 前端访问密钥 |
+
+> ❌ **不是**这两个的，都别填：`sb_secret_…`（管理员密钥）、项目 ID（如 `kjrudrlhcynhfnsuqfds` 这种短串）、数据库密码。
 
 > 🔒 **安全说明**：这两个值**设计上就是可以公开的**，写在前端代码里也不会让别人偷走你的数据 ——
 > 真正的隔离由数据库的「行级安全策略」保证：每个账号只能读写属于自己的那些记录。
@@ -75,8 +93,11 @@ npm run preview     # 本地预览打包结果
 
 ```ini
 VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=在这里粘贴你的 anon key
+VITE_SUPABASE_ANON_KEY=在这里粘贴你的 anon / publishable key
 ```
+
+> `VITE_SUPABASE_ANON_KEY` 这个名字一直有效；如果你更喜欢新控制台的名，
+> 写 `VITE_SUPABASE_PUBLISHABLE_KEY=...` 也认（两个都写时以 `ANON_KEY` 为准）。
 
 改完必须**重启** `npm run dev` 才会生效。
 
@@ -109,6 +130,10 @@ VITE_SUPABASE_ANON_KEY=在这里粘贴你的 anon key
 4. 万一登录失效（比如清过浏览器数据），重新输邮箱密码登进去，**内容一条都不会少**
 
 右上角的 ⤴ 图标是**退出登录**。
+
+**删除记录**：在衣橱、灵感墙、搭配工坊里，**手机长按图片**或**电脑在图片上点右键**，会弹出确认框；确认后记录和它在云端的图片会一起清理（不可撤销）。删除搭配只会删掉那条记录和它的合成长图，组成它的单品照片属于衣橱里的单品，不会被删。
+
+**从旧版本搬数据**：如果浏览器里还留着老版本（纯本地存储）的数据，登录后页面顶部会出现一条「检测到本机有 N 条旧记录尚未上云」的横幅，点「导入到云端」即可连同图片一起搬到云账号下。全部成功才会清掉本地旧数据；中途失败会保留原数据，可以再点一次重试。
 
 ---
 
@@ -160,7 +185,8 @@ npm run build      # 产出 dist/ 文件夹
 | **免费额度** | 数据库 500MB、文件存储 1GB、5 万月活用户。纯个人使用完全够（以官网当前条款为准） |
 | **闲置暂停** | 免费项目长期无人访问会被自动暂停，**数据不会丢**，登录控制台点一下即可唤醒 |
 | **图片自动压缩** | 上传的图片和搭配长图会自动压到长边 1600px / JPEG 质量 0.85，体积减少 90% 以上，显示效果几乎无差别 |
-| **不删图片** | 删除记录时云端图片可能残留（不影响使用，可在 Storage 里手动清理） |
+| **删除记录** | 手机长按图片 / 电脑在图片上点右键即可删除，记录与云端图片一起清理；图片删不掉只会留一条控制台警告，不影响记录本身已删除 |
+| **图片残留** | 极端情况（网络中断、Storage 权限异常）下云端图片可能没删干净，不影响使用，可在 Supabase → Storage 里手动清理 |
 | **密码** | 忘记密码需要邮箱重置功能，目前界面未提供入口，可到 Supabase 控制台 → Authentication → Users 里处理 |
 
 ---
@@ -174,7 +200,10 @@ A：多半是没执行 `supabase/schema.sql`（表不存在），或者 anon key
 A：第三节 3.5 没关掉 Confirm email。去 Supabase 关掉，或者去邮箱点确认链接。
 
 **Q：以前浏览器里存的数据去哪了？**
-A：旧数据仍在浏览器的本地存储里，未被删除。项目内置了迁移工具（`src/lib/migrateLocalData.ts`），可以把它们连同图片一起搬到云端账号下。
+A：旧数据仍在浏览器的本地存储里，未被删除。登录后页面顶部会出现「检测到本机有 N 条旧记录尚未上云」的横幅，点「导入到云端」即可把它们连同图片一起搬到云端账号下（实现见 `src/lib/migrateLocalData.ts` 与 `src/components/LegacyMigrationBanner.tsx`）。全部导入成功才会清掉本地旧数据，失败会保留以便重试。
+
+**Q：想删掉一条记录怎么操作？**
+A：手机**长按**图片、电脑在图片上**点右键**，弹出确认框后点「删除」。如果长按没反应，试试按住别动约半秒（手指稍微移动会被当成滚动页面而取消）。
 
 **Q：`localhost:5173` 打不开或端口变成 5174 了？**
 A：5173 被别的程序占用时 Vite 会自动换端口。注意**不同端口/域名属于不同站点，登录状态不通用**，重新登录即可。
@@ -196,11 +225,13 @@ src/
 ├── components/
 │   ├── ImageUpload.tsx        上传（压缩 → 上传云端 → 返回网址）
 │   ├── Modal.tsx
-│   └── BottomNavigation.tsx
+│   ├── BottomNavigation.tsx
+│   └── LegacyMigrationBanner.tsx  提示把旧本地数据导入云端
 ├── contexts/
 │   └── AuthContext.tsx        登录状态管理
 ├── hooks/
-│   └── useCloudData.ts        云端读写（衣橱 / 搭配 / 灵感三个 hook）
+│   ├── useCloudData.ts        云端读写（衣橱 / 搭配 / 灵感三个 hook）
+│   └── useLongPress.ts        长按 / 右键手势（删除入口）
 ├── lib/
 │   ├── supabase.ts            Supabase 客户端
 │   ├── imageStorage.ts        图片压缩、上传、删除
