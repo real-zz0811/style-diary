@@ -176,6 +176,11 @@ npm run build      # 产出 dist/ 文件夹
 3. 等几秒，得到一个固定网址，如 `https://xxxx.netlify.app`
 4. 按提示**认领站点**（Claim / 登录），否则站点不可管理、也容易丢
 
+> ✅ **你的站点已经用这个方式上线了，不用重新做**：
+> - 网址：<https://peppy-starship-0a036b.netlify.app>
+> - 站点名：`peppy-starship-0a036b`　Site ID：`52b4591d-245e-48ce-aa90-cf2a8ede0823`（已认领）
+> - 日常更新**不用再拖文件夹**，直接用 6.4 的**方式②一条命令**即可（网址保持不变）。
+
 > 代价：**以后每次改代码，都要重新 `npm run build` + 重新拖一次**（它不会自动更新）。
 
 **方式 B：Vercel + GitHub（推荐长期用：改完只需 `git push`，自动上线）**
@@ -218,6 +223,12 @@ npm run build      # 产出 dist/ 文件夹
 2. **配置回调地址**：Authentication → URL Configuration → 把线上域名（如 `https://xxxx.netlify.app`）填进 **Site URL**。
 3. **确认注册策略**：本项目走**开放注册**，`Allow new users to sign up` 保持开启即可 —— 朋友打开网址 → 点「注册」→ 填邮箱密码 → 立刻能用（因为 3.5 已关掉 Confirm email，不用收邮件）。想改成一注册完就关门，见 3.5 的两种做法。
 
+4. **确认站点是「公开访问」**（⭐ 最容易漏、后果最严重）
+   Netlify 站点面板 → **Site configuration → Access & security**（新版界面可能是 **Visitor access**）→ 必须选 **Public / 任何人都能访问**。
+   如果开着 **"Require login / Only team members"**（API 里的 `sso_login: true`），**外人打开你的网址只会看到一个 401 登录跳转页**，而你自己的浏览器里带着登录态、打开却一切正常 —— 极易误判成"已经上线成功了"。
+   自检：用**无痕窗口**打开线上网址（或手机流量 / 另一台设备），能看到登录页才算通过。
+   > 已处理：本站点的 `sso_login` 已关闭。注意 Netlify 的**账号级** `site_sso_login` 对新建站点默认仍可能是开启的，每次新建站点都要回头检查这一项。
+
 ### 6.4 以后改了代码，怎么更新线上版本？
 
 **先记住一句话：本地改代码不会影响已经部署的站点。** 线上跑的是"你上次发布的那一份拷贝"，它不会自己变，也**不会因为你改了本地文件而失效** —— 只是**停留在旧版本**，直到你重新发布一次。
@@ -227,7 +238,7 @@ npm run build      # 产出 dist/ 文件夹
 | 方式 | 每次要做什么 | 网址会变吗 | 适合 |
 |---|---|---|---|
 | **① 手动重拖**（沿用现在的 Netlify 站点） | `npm run build` → 打开**你自己站点的 Deploys 页** → 把 `dist` 拖进 "Drag and drop your site output folder here" | 不变 | 偶尔改一次 |
-| **② Netlify CLI** | 首次 `npx netlify-cli login` + `npx netlify-cli link`；之后 `npm run build; npx netlify-cli deploy --prod --dir=dist` | 不变 | 想要"一条命令"搞定，又不碰 GitHub |
+| **② Netlify CLI**（✅ 已配好，见下方） | 在项目目录跑一条命令：`powershell -ExecutionPolicy Bypass -File .\update-online.ps1` | 不变 | 想要"一条命令"搞定，又不碰 GitHub |
 | **③ Vercel + GitHub** | `git add -A; git commit -m "…"; git push` | 不变（首次上线才是新网址） | 长期维护 |
 
 > ⚠️ **最容易踩的坑**：更新时**不要**再打开 `app.netlify.com/drop` 拖一次 —— 那会**新建一个站点、得到一个新网址**，老网址仍停在旧版本，你会以为更新了其实没有。正确入口是**你自己站点的 Deploys 页面**。
@@ -237,6 +248,34 @@ npm run build      # 产出 dist/ 文件夹
 > 💡 换网址/换域名**不影响数据**：账号、衣橱、图片全在 Supabase 里，跟网址无关，朋友换到新网址登录即可，数据一条不少；只是**要把新域名填进 Supabase → Authentication → URL Configuration 的 Site URL**。
 >
 > 💡 手动部署也有历史版本：Netlify 会保留每次 deploy，出问题可在 Deploys 列表里点 **Publish deploy** 一键回退到上一个正常版本。
+
+#### 方式②（Netlify CLI）已经配好了 —— 以后用这一条命令
+
+一次性配置**已完成**：`netlify-cli` 装在项目依赖里、CLI 已登录（`niao811@qq.com`）、项目已关联到站点 `peppy-starship-0a036b`（关联记录写在 `.netlify/state.json`，已被 gitignore，不进 git）。
+
+**以后每次改完代码，在项目目录跑这一条就够了**：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\update-online.ps1
+```
+
+它做两件事：① `npm run build` ② `npx netlify-cli deploy --prod --no-build --dir=dist`。
+任一环节失败会**立刻中止**，线上仍是上一个正常版本、不会变坏；成功会打印 `Production URL: https://peppy-starship-0a036b.netlify.app`（**网址不变**）。
+实测：构建约 5 秒、上传 + 上线约 20 秒。
+
+> 💡 **脚本必须保存为 `UTF-8 with BOM`**：脚本里的中文在 Windows PowerShell 5.1 下若没有 BOM 会被按 ANSI 解码，多字节序列会吃掉后面的引号/大括号，直接报 `缺少右"}"` 之类的语法错误（内容看起来完全正常，所以很难自己发现）。用 VS Code 右下角编码菜单选 **UTF-8 with BOM** 再保存。
+
+> 💡 **为什么加 `--no-build`**：不加的话 Netlify 侧会**再跑一遍 `npm run build`**（因为站点面板里配了构建命令），白白多花时间；我们本地已经构建好，直接上传即可。
+
+**换电脑 / 重装系统后怎么恢复**（3 条命令，网址依然不变）：
+
+```powershell
+npm install                                                      # 装回 netlify-cli
+npx netlify-cli login                                            # 浏览器里点 Authorize
+npx netlify-cli link --id 52b4591d-245e-48ce-aa90-cf2a8ede0823   # 关联回原站点
+```
+
+查状态：`npx netlify-cli status`，应显示 `Current project: peppy-starship-0a036b` 与 `Project URL: https://peppy-starship-0a036b.netlify.app`。
 
 ---
 

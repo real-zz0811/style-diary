@@ -11,6 +11,9 @@ dist
 dist-ssr
 *.local
 
+# Netlify CLI 的本机状态（记录已关联的站点 ID），属于本地文件不入库
+.netlify
+
 .vscode/*
 !.vscode/extensions.json
 .idea
