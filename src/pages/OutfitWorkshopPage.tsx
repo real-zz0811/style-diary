@@ -1,7 +1,9 @@
 import { useState, useRef } from 'react';
-import { Shirt, Eye, Download, X } from 'lucide-react';
-import { useClothing, useOutfits } from '../hooks/useStyleDiary';
-import { generateId } from '../hooks/useStyleDiary';
+import { Shirt, Eye, Download, X, Loader2 } from 'lucide-react';
+import { useClothingCloud, useOutfitsCloud } from '../hooks/useCloudData';
+import { generateId } from '../lib/id';
+import { uploadDataUrl } from '../lib/imageStorage';
+import { useAuth } from '../contexts/AuthContext';
 import {
   getClothingLabel,
   getSlotsForClothing,
@@ -84,8 +86,13 @@ function drawRoundRect(
 }
 
 export function OutfitWorkshopPage() {
-  const [clothing] = useClothing();
-  const [, setOutfits] = useOutfits();
+  const { user } = useAuth();
+  const {
+    items: clothing,
+    isLoading: isClothingLoading,
+    error: clothingError,
+  } = useClothingCloud();
+  const { items: outfits, add: addOutfit } = useOutfitsCloud();
   const [slots, setSlots] = useState<Record<OutfitSlotKey, Clothing | null>>({
     top: null,
     bottom: null,
@@ -95,6 +102,8 @@ export function OutfitWorkshopPage() {
   });
   const [selectedItem, setSelectedItem] = useState<Clothing | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const filledSlotCount = outfitSlotOrder.filter((key) => slots[key]).length;
@@ -153,13 +162,21 @@ export function OutfitWorkshopPage() {
   );
 
   const handleSaveOutfit = async () => {
-    if (!canSave) return;
+    if (!canSave || isSaving) return;
+
+    if (!user) {
+      setSaveError('登录状态已失效，请重新登录');
+      return;
+    }
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    setIsSaving(true);
+    setSaveError('');
 
     // 主体单品按固定顺序竖排，只绘制已选中的
     const mainItems = mainSlotKeys
@@ -282,10 +299,13 @@ export function OutfitWorkshopPage() {
         ctx.stroke();
       });
 
-      const compositeImageUrl = canvas.toDataURL('image/jpeg', 0.9);
+      // 长图上传到云端存储，数据库里只保存网址
+      const compositeDataUrl = canvas.toDataURL('image/jpeg', 0.9);
+      const compositeImageUrl = await uploadDataUrl(compositeDataUrl, user.id);
 
       const newOutfit: Outfit = {
         id: generateId(),
+        compositeImageUrl,
         createdAt: new Date().toISOString(),
       };
       if (slots.top) newOutfit.topId = slots.top.id;
@@ -294,13 +314,8 @@ export function OutfitWorkshopPage() {
       if (slots.accessoryUpper) newOutfit.accessoryUpperId = slots.accessoryUpper.id;
       if (slots.accessoryLower) newOutfit.accessoryLowerId = slots.accessoryLower.id;
 
-      // 合成图与搭配记录一同写入 localStorage
-      const outfitWithImage = { ...newOutfit, compositeImage: compositeImageUrl };
-      const storedOutfits = JSON.parse(localStorage.getItem('style-diary-outfits-images') || '[]');
-      storedOutfits.unshift(outfitWithImage);
-      localStorage.setItem('style-diary-outfits-images', JSON.stringify(storedOutfits));
+      await addOutfit(newOutfit);
 
-      setOutfits((prev) => [newOutfit, ...prev]);
       setSlots({
         top: null,
         bottom: null,
@@ -309,13 +324,15 @@ export function OutfitWorkshopPage() {
         accessoryLower: null,
       });
     } catch (error) {
-      console.error('Error creating composite image:', error);
+      console.error('生成搭配长图失败：', error);
+      setSaveError(error instanceof Error ? error.message : '生成长图失败，请重试');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const storedOutfitsWithImages: Array<Outfit & { compositeImage: string }> = JSON.parse(
-    localStorage.getItem('style-diary-outfits-images') || '[]'
-  );
+  // 有长图的历史搭配（更早的数据可能只有记录没有图，这里自动过滤）
+  const savedOutfits = outfits.filter((outfit) => outfit.compositeImageUrl);
 
   return (
     <div className="min-h-full">
@@ -345,13 +362,28 @@ export function OutfitWorkshopPage() {
           </div>
 
           <button
-            onClick={handleSaveOutfit}
-            disabled={!canSave}
+            onClick={() => void handleSaveOutfit()}
+            disabled={!canSave || isSaving}
             className="w-full mt-4 py-3 bg-[#2C2C2C] text-white rounded-full text-sm font-medium tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2C2C2C]/90 transition-colors"
           >
-            <Download className="w-4 h-4" strokeWidth={1.5} />
-            保存这套搭配
+            {isSaving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                正在生成并上传…
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" strokeWidth={1.5} />
+                保存这套搭配
+              </>
+            )}
           </button>
+
+          {saveError && (
+            <p className="mt-3 px-4 py-3 rounded-lg bg-white text-sm text-[#B4553F] leading-relaxed">
+              {saveError}
+            </p>
+          )}
 
           {!canSave && (
             <p className="mt-3 text-center text-xs text-[#2C2C2C]/40 leading-relaxed">
@@ -366,7 +398,16 @@ export function OutfitWorkshopPage() {
       {/* Material Area */}
       <div className="px-4">
         <h3 className="text-sm font-medium text-[#2C2C2C] mb-3">选择单品</h3>
-        {clothing.length === 0 ? (
+        {isClothingLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <Loader2 className="w-6 h-6 text-[#2C2C2C]/30 animate-spin" strokeWidth={1.5} />
+            <p className="text-sm text-[#2C2C2C]/40">正在读取衣橱…</p>
+          </div>
+        ) : clothingError ? (
+          <div className="py-12 text-center">
+            <p className="text-sm text-[#B4553F] leading-relaxed">{clothingError}</p>
+          </div>
+        ) : clothing.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12">
             <div className="w-16 h-16 mb-4 rounded-full bg-[#F5F0E8] flex items-center justify-center">
               <Shirt className="w-6 h-6 text-[#2C2C2C]/40" strokeWidth={1.5} />
@@ -393,18 +434,18 @@ export function OutfitWorkshopPage() {
       </div>
 
       {/* History */}
-      {storedOutfitsWithImages.length > 0 && (
+      {savedOutfits.length > 0 && (
         <div className="px-4 mt-8 pb-6">
           <h3 className="text-sm font-medium text-[#2C2C2C] mb-3">历史搭配记录</h3>
           <div className="grid grid-cols-3 gap-3">
-            {storedOutfitsWithImages.map((outfit) => (
+            {savedOutfits.map((outfit) => (
               <button
                 key={outfit.id}
-                onClick={() => setLightboxImage(outfit.compositeImage)}
+                onClick={() => setLightboxImage(outfit.compositeImageUrl!)}
                 className="aspect-[3/4] rounded-xl overflow-hidden bg-[#F5F0E8] relative group"
               >
                 <img
-                  src={outfit.compositeImage}
+                  src={outfit.compositeImageUrl}
                   alt="搭配"
                   className="w-full h-full object-cover"
                 />

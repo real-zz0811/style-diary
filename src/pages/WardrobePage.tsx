@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { Plus, Palette } from 'lucide-react';
+import { Loader2, Plus, Palette } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { ImageUpload } from '../components/ImageUpload';
-import { useClothing } from '../hooks/useStyleDiary';
-import { generateId } from '../hooks/useStyleDiary';
+import { useClothingCloud } from '../hooks/useCloudData';
+import { generateId } from '../lib/id';
 import {
   accessoryPositionLabels,
   categoryLabels,
@@ -22,12 +22,14 @@ const createEmptyForm = () => ({
 });
 
 export function WardrobePage() {
-  const [clothing, setClothing] = useClothing();
+  const { items: clothing, isLoading, error, add } = useClothingCloud();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState(createEmptyForm);
+  const [uploadError, setUploadError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!formData.imageUrl || !formData.name.trim()) return;
+  const handleSave = async () => {
+    if (!formData.imageUrl || !formData.name.trim() || isSaving) return;
 
     const newItem: Clothing = {
       id: generateId(),
@@ -41,14 +43,24 @@ export function WardrobePage() {
       newItem.accessoryPosition = formData.accessoryPosition;
     }
 
-    setClothing((prev) => [newItem, ...prev]);
-    setFormData(createEmptyForm());
-    setIsModalOpen(false);
+    setIsSaving(true);
+    setUploadError('');
+    try {
+      // 先确认写入云端成功，再收起弹窗，避免"看着存上了其实没存上"
+      await add(newItem);
+      setFormData(createEmptyForm());
+      setIsModalOpen(false);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : '保存失败，请重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
     setIsModalOpen(false);
     setFormData(createEmptyForm());
+    setUploadError('');
   };
 
   return (
@@ -63,7 +75,16 @@ export function WardrobePage() {
         </button>
       </div>
 
-      {clothing.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center px-8 py-20 gap-3">
+          <Loader2 className="w-6 h-6 text-[#2C2C2C]/30 animate-spin" strokeWidth={1.5} />
+          <p className="text-sm text-[#2C2C2C]/40">正在读取衣橱…</p>
+        </div>
+      ) : error ? (
+        <div className="px-8 py-16 text-center">
+          <p className="text-sm text-[#B4553F] leading-relaxed">{error}</p>
+        </div>
+      ) : clothing.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-8 py-20">
           <div className="w-20 h-20 mb-8 rounded-full bg-[#F5F0E8] flex items-center justify-center">
             <Palette className="w-8 h-8 text-[#2C2C2C]/40" strokeWidth={1.5} />
@@ -105,6 +126,7 @@ export function WardrobePage() {
             <ImageUpload
               value={formData.imageUrl}
               onChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+              onError={setUploadError}
             />
           </div>
 
@@ -172,12 +194,18 @@ export function WardrobePage() {
             )}
           </div>
 
+          {uploadError && (
+            <p className="px-4 py-3 rounded-lg bg-[#F5F0E8] text-sm text-[#B4553F] leading-relaxed">
+              {uploadError}
+            </p>
+          )}
+
           <button
-            onClick={handleSave}
-            disabled={!formData.imageUrl || !formData.name.trim()}
+            onClick={() => void handleSave()}
+            disabled={!formData.imageUrl || !formData.name.trim() || isSaving}
             className="w-full py-3.5 bg-[#2C2C2C] text-white rounded-full text-sm font-medium tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2C2C2C]/90 transition-colors"
           >
-            保存
+            {isSaving ? '保存中…' : '保存'}
           </button>
         </div>
       </Modal>

@@ -1,21 +1,23 @@
 import { useState } from 'react';
-import { Plus, Sparkles } from 'lucide-react';
+import { Loader2, Plus, Sparkles } from 'lucide-react';
 import { Modal } from '../components/Modal';
 import { ImageUpload } from '../components/ImageUpload';
-import { useInspirations } from '../hooks/useStyleDiary';
-import { generateId } from '../hooks/useStyleDiary';
+import { useInspirationsCloud } from '../hooks/useCloudData';
+import { generateId } from '../lib/id';
 import type { Inspiration } from '../types';
 
 export function InspirationWallPage() {
-  const [inspirations, setInspirations] = useInspirations();
+  const { items: inspirations, isLoading, error: loadError, add } = useInspirationsCloud();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
     imageUrl: '',
     note: '',
   });
+  const [saveError, setSaveError] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = () => {
-    if (!formData.imageUrl) return;
+  const handleSave = async () => {
+    if (!formData.imageUrl || isSaving) return;
 
     const newItem: Inspiration = {
       id: generateId(),
@@ -24,14 +26,24 @@ export function InspirationWallPage() {
       createdAt: new Date().toISOString(),
     };
 
-    setInspirations((prev) => [newItem, ...prev]);
-    setFormData({ imageUrl: '', note: '' });
-    setIsModalOpen(false);
+    setIsSaving(true);
+    setSaveError('');
+    try {
+      // 先确认写入云端成功，再收起弹窗
+      await add(newItem);
+      setFormData({ imageUrl: '', note: '' });
+      setIsModalOpen(false);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : '保存失败，请重试');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleClose = () => {
     setIsModalOpen(false);
     setFormData({ imageUrl: '', note: '' });
+    setSaveError('');
   };
 
   // Split into two columns for masonry layout
@@ -54,7 +66,16 @@ export function InspirationWallPage() {
         </button>
       </div>
 
-      {inspirations.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center px-8 py-20 gap-3">
+          <Loader2 className="w-6 h-6 text-[#2C2C2C]/30 animate-spin" strokeWidth={1.5} />
+          <p className="text-sm text-[#2C2C2C]/40">正在读取灵感墙…</p>
+        </div>
+      ) : loadError ? (
+        <div className="px-8 py-16 text-center">
+          <p className="text-sm text-[#B4553F] leading-relaxed">{loadError}</p>
+        </div>
+      ) : inspirations.length === 0 ? (
         <div className="flex flex-col items-center justify-center px-8 py-20">
           <div className="w-20 h-20 mb-8 rounded-full bg-[#F5F0E8] flex items-center justify-center">
             <Sparkles className="w-8 h-8 text-[#2C2C2C]/40" strokeWidth={1.5} />
@@ -89,6 +110,7 @@ export function InspirationWallPage() {
             <ImageUpload
               value={formData.imageUrl}
               onChange={(url) => setFormData((prev) => ({ ...prev, imageUrl: url }))}
+              onError={setSaveError}
             />
           </div>
 
@@ -105,12 +127,18 @@ export function InspirationWallPage() {
             />
           </div>
 
+          {saveError && (
+            <p className="px-4 py-3 rounded-lg bg-[#F5F0E8] text-sm text-[#B4553F] leading-relaxed">
+              {saveError}
+            </p>
+          )}
+
           <button
-            onClick={handleSave}
-            disabled={!formData.imageUrl}
+            onClick={() => void handleSave()}
+            disabled={!formData.imageUrl || isSaving}
             className="w-full py-3.5 bg-[#2C2C2C] text-white rounded-full text-sm font-medium tracking-wide disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#2C2C2C]/90 transition-colors"
           >
-            保存
+            {isSaving ? '保存中…' : '保存'}
           </button>
         </div>
       </Modal>
