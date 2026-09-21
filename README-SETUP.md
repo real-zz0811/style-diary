@@ -213,7 +213,7 @@ npm run build      # 产出 dist/ 文件夹
 
 > 两种方式可以**并存**：Vercel 作为日常更新用的主站，旧 Netlify 站点先留着当备份，等新站自测通过再停用。
 
-### 6.3 部署后要做的三件事
+### 6.3 部署后要做的四件事
 
 1. **确认环境变量进了构建产物**（`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`）
    Vite 的环境变量是**构建时**写进代码的，不是运行时读取，所以两种托管方式要求不同：
@@ -222,7 +222,6 @@ npm run build      # 产出 dist/ 文件夹
    自检：打开线上网址能正常看到登录页，就说明变量生效了。
 2. **配置回调地址**：Authentication → URL Configuration → 把线上域名（如 `https://xxxx.netlify.app`）填进 **Site URL**。
 3. **确认注册策略**：本项目走**开放注册**，`Allow new users to sign up` 保持开启即可 —— 朋友打开网址 → 点「注册」→ 填邮箱密码 → 立刻能用（因为 3.5 已关掉 Confirm email，不用收邮件）。想改成一注册完就关门，见 3.5 的两种做法。
-
 4. **确认站点是「公开访问」**（⭐ 最容易漏、后果最严重）
    Netlify 站点面板 → **Site configuration → Access & security**（新版界面可能是 **Visitor access**）→ 必须选 **Public / 任何人都能访问**。
    如果开着 **"Require login / Only team members"**（API 里的 `sso_login: true`），**外人打开你的网址只会看到一个 401 登录跳转页**，而你自己的浏览器里带着登录态、打开却一切正常 —— 极易误判成"已经上线成功了"。
