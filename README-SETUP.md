@@ -170,16 +170,43 @@ npm run build      # 产出 dist/ 文件夹
 
 ### 6.2 托管（二选一，都免费）
 
-**方式 A：Netlify Drop（最简单，不用懂 git）**
+**方式 A：Netlify Drop（最快，不用懂 git）**
 1. 打开 https://app.netlify.com/drop
 2. 把整个 **`dist` 文件夹**拖进去
 3. 等几秒，得到一个固定网址，如 `https://xxxx.netlify.app`
+4. 按提示**认领站点**（Claim / 登录），否则站点不可管理、也容易丢
 
-**方式 B：Vercel（能自动更新，推荐长期用）**
-1. 把代码推到 GitHub 私有仓库
-2. 到 https://vercel.com 用 GitHub 登录 → Import 这个仓库
-3. 在 **Environment Variables** 里添加和 `.env.local` 相同的两个变量
-4. 之后每次推送代码，Vercel 自动重新部署
+> 代价：**以后每次改代码，都要重新 `npm run build` + 重新拖一次**（它不会自动更新）。
+
+**方式 B：Vercel + GitHub（推荐长期用：改完只需 `git push`，自动上线）**
+
+一次性投入约 10 分钟，之后日常更新只有一条命令。
+
+1. **在 GitHub 建一个空的私有仓库**：https://github.com/new
+   - Repository name 随便起，比如 `style-diary`；可见性选 **Private**
+   - ⚠️ 三个初始化选项（Add a README file / Add .gitignore / Choose a license）**都不要勾**，否则会和本地已有的提交历史冲突
+2. **把本地仓库连上去并首次推送**（在本项目目录执行，`你的用户名` 换成你的 GitHub 用户名）：
+   ```bash
+   git remote add origin https://github.com/你的用户名/style-diary.git
+   git push -u origin main
+   ```
+   首次推送会**弹出浏览器窗口**让你登录 GitHub 并授权（本机 git 走的是 `credential.helper=manager`，不需要手动生成 token）。
+3. **Vercel 导入**：https://vercel.com → 用 **Continue with GitHub** 登录 → Add New… → Project → 选中该仓库 → Import
+   - Framework Preset 会自动识别为 **Vite**；确认 Build Command = `npm run build`、Output Directory = `dist`
+   - 展开 **Environment Variables**，按 `.env.local` 里的**同名同值**加两条（值不要加引号）：`VITE_SUPABASE_URL`、`VITE_SUPABASE_ANON_KEY`
+   - 点 **Deploy**，约 1 分钟得到 `https://xxxx.vercel.app`
+4. **以后更新**：
+   ```bash
+   git add -A; git commit -m "改了什么"; git push
+   ```
+   Vercel 自动重建并部署（约 1 分钟）—— **不用本地 build，也不用再拖文件夹**。
+
+> ⚠️ 三个容易踩的坑
+> 1. `.env.local` **已被 `.gitignore` 忽略**（规则 `*.local`），密钥不会进 GitHub —— 别用 `git add -f` 把它硬推上去。
+> 2. Vercel 的环境变量是**构建时**注入的，**改完变量必须 Redeploy 一次**才生效。
+> 3. `*.vercel.app` / `*.netlify.app` 这类免费域名在部分地区访问可能偏慢或受干扰；朋友反馈打开慢的话，可绑自己的域名（Vercel → Settings → Domains 添加域名并按提示配 DNS），**绑完记得把新域名填进 Supabase 的 Site URL**。
+
+> 两种方式可以**并存**：Vercel 作为日常更新用的主站，旧 Netlify 站点先留着当备份，等新站自测通过再停用。
 
 ### 6.3 部署后要做的三件事
 
