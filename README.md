@@ -164,7 +164,11 @@ npm run dev          # 启动，浏览器打开 http://localhost:5173/
 
 首次运行前需要两件事（**详细图文步骤见 [配置与维护手册](README-SETUP.md) 第三节**）：
 
-1. 在项目根目录创建 `.env.local`（已被 `.gitignore` 的 `*.local` 排除，不会进仓库）：
+1. 在项目根目录创建 `.env.local`（已被 `.gitignore` 的 `*.local` 排除，不会进仓库）——复制仓库里的 **`.env.example`** 模板最快：
+
+   ```bash
+   Copy-Item .env.example .env.local        # macOS / Linux：cp .env.example .env.local
+   ```
 
    ```ini
    VITE_SUPABASE_URL=https://xxxxxxxx.supabase.co
