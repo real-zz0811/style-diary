@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-label="Style Diary 衣架图标">
+  <title>Style Diary</title>
+  <rect width="64" height="64" rx="14" fill="#FDFBF7"/>
+  <rect x="1" y="1" width="62" height="62" rx="13" fill="none" stroke="#2C2C2C" stroke-opacity="0.12" stroke-width="2"/>
+  <g fill="none" stroke="#2C2C2C" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M9 50 L32 28 L55 50 Z"/>
+    <path d="M32 28 V22"/>
+  </g>
+  <path d="M32 22 A6 6 0 1 1 38 16" fill="none" stroke="#2C2C2C" stroke-width="4" stroke-linecap="round"/>
+</svg>

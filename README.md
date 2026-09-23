@@ -246,6 +246,7 @@ src/
 
 supabase/schema.sql              建表 + RLS + 存储桶策略（可重复执行）
 docs/screenshots/                首屏截图
+public/                          站点图标与社交预览图（favicon.svg / og-cover.png）
 README-SETUP.md                  配置与维护手册（370 行）
 update-online.ps1                一条命令更新线上版本
 ```
