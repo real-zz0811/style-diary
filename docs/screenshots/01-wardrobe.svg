@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1560" viewBox="0 0 720 1560" role="img" aria-label="衣橱页面截图占位">
+  <title>衣橱 · 截图占位</title>
+  <rect width="720" height="1560" fill="#FDFBF7"/>
+  <rect x="60" y="40" width="600" height="1480" rx="52" fill="#FFFFFF" stroke="#2C2C2C" stroke-opacity="0.08" stroke-width="2"/>
+  <rect x="310" y="72" width="100" height="10" rx="5" fill="#2C2C2C" fill-opacity="0.1"/>
+
+  <text x="360" y="156" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="8" fill="#2C2C2C">STYLE DIARY</text>
+  <line x1="116" y1="192" x2="604" y2="192" stroke="#2C2C2C" stroke-opacity="0.08" stroke-width="2"/>
+
+  <text x="116" y="262" font-family="Georgia, serif" font-size="42" fill="#2C2C2C">我的衣橱</text>
+  <text x="116" y="300" font-family="Helvetica, Arial, sans-serif" font-size="19" fill="#2C2C2C" fill-opacity="0.35">长按图片（电脑上可右键）可删除</text>
+  <circle cx="580" cy="256" r="28" fill="#2C2C2C"/>
+  <text x="580" y="271" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="34" fill="#FFFFFF">+</text>
+
+  <g fill="#F5F0E8">
+    <rect x="116" y="336" width="228" height="286" rx="14"/>
+    <rect x="376" y="336" width="228" height="286" rx="14"/>
+    <rect x="116" y="650" width="228" height="286" rx="14"/>
+    <rect x="376" y="650" width="228" height="286" rx="14"/>
+    <rect x="116" y="964" width="228" height="286" rx="14"/>
+    <rect x="376" y="964" width="228" height="286" rx="14"/>
+  </g>
+  <g fill="#E9E1D4">
+    <rect x="116" y="336" width="228" height="238" rx="14"/>
+    <rect x="376" y="336" width="228" height="238" rx="14"/>
+    <rect x="116" y="650" width="228" height="238" rx="14"/>
+    <rect x="376" y="650" width="228" height="238" rx="14"/>
+    <rect x="116" y="964" width="228" height="238" rx="14"/>
+    <rect x="376" y="964" width="228" height="238" rx="14"/>
+  </g>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="19" fill="#2C2C2C" fill-opacity="0.6">
+    <text x="132" y="608">上装</text>
+    <text x="392" y="608">下装</text>
+    <text x="132" y="922">鞋子</text>
+    <text x="392" y="922">配饰 · 上身</text>
+    <text x="132" y="1236">配饰 · 下身</text>
+    <text x="392" y="1236">上装</text>
+  </g>
+
+  <line x1="60" y1="1392" x2="660" y2="1392" stroke="#2C2C2C" stroke-opacity="0.06" stroke-width="2"/>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="22" text-anchor="middle">
+    <text x="180" y="1452" fill="#2C2C2C">衣橱</text>
+    <text x="360" y="1452" fill="#2C2C2C" fill-opacity="0.4">搭配工坊</text>
+    <text x="540" y="1452" fill="#2C2C2C" fill-opacity="0.4">灵感墙</text>
+  </g>
+
+  <text x="360" y="1554" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#2C2C2C" fill-opacity="0.3">截图占位 · 同名 PNG 替换即可</text>
+</svg>

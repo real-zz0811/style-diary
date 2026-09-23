@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1560" viewBox="0 0 720 1560" role="img" aria-label="合成出的搭配长图截图占位">
+  <title>搭配长图 · 截图占位</title>
+  <rect width="720" height="1560" fill="#FDFBF7"/>
+
+  <text x="360" y="80" text-anchor="middle" font-family="Georgia, serif" font-size="34" fill="#2C2C2C">搭配长图</text>
+  <text x="360" y="118" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#2C2C2C" fill-opacity="0.4">Canvas 在浏览器内合成 · 参数化排版</text>
+
+  <rect x="125" y="168" width="478" height="932" rx="10" fill="#2C2C2C" fill-opacity="0.08"/>
+  <rect x="121" y="160" width="478" height="932" rx="10" fill="#FFFFFF" stroke="#E8E8E8" stroke-width="4"/>
+
+  <g fill="#E9E1D4">
+    <rect x="240" y="174" width="240" height="300"/>
+    <rect x="240" y="474" width="240" height="300"/>
+    <rect x="240" y="774" width="240" height="300"/>
+  </g>
+  <g stroke="#F0F0F0" stroke-width="1.5">
+    <line x1="240" y1="474" x2="480" y2="474"/>
+    <line x1="240" y1="774" x2="480" y2="774"/>
+  </g>
+
+  <rect x="131" y="350" width="98" height="98" rx="14" fill="#FFFFFF"/>
+  <rect x="135" y="354" width="90" height="90" rx="10" fill="#E9E1D4"/>
+
+  <rect x="491" y="800" width="98" height="98" rx="14" fill="#FFFFFF"/>
+  <rect x="495" y="804" width="90" height="90" rx="10" fill="#E9E1D4"/>
+
+  <g font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.45">
+    <text x="232" y="350" text-anchor="end">上装</text>
+    <text x="232" y="650" text-anchor="end">下装</text>
+    <text x="232" y="950" text-anchor="end">鞋子</text>
+    <text x="180" y="486" text-anchor="middle">配饰 · 上身</text>
+    <text x="540" y="938" text-anchor="middle">配饰 · 下身</text>
+  </g>
+
+  <g font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.45">
+    <text x="360" y="1140" text-anchor="middle">主体竖排（cover 绘制不变形）· 配饰绘制在主体图外侧</text>
+    <text x="360" y="1172" text-anchor="middle">白色相框 + 圆角裁剪 + 投影，间隔线分隔主体单品</text>
+  </g>
+
+  <line x1="140" y1="1216" x2="580" y2="1216" stroke="#2C2C2C" stroke-opacity="0.08" stroke-width="2"/>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.4">
+    <text x="360" y="1256" text-anchor="middle">MAIN_IMAGE 400 × 500　ACCESSORY_SIZE 150　ACCESSORY_GAP 24</text>
+    <text x="360" y="1288" text-anchor="middle">ACCESSORY_UPPER_RATIO 0.25　ACCESSORY_LOWER_RATIO 0.75</text>
+    <text x="360" y="1320" text-anchor="middle">ACCESSORY_GAP 改成负数 → 得到「骑在主体边缘」的杂志叠压效果</text>
+  </g>
+
+  <text x="360" y="1554" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#2C2C2C" fill-opacity="0.3">截图占位 · 同名 PNG 替换即可</text>
+</svg>

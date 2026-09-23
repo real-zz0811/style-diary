@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1560" viewBox="0 0 720 1560" role="img" aria-label="搭配工坊页面截图占位">
+  <title>搭配工坊 · 截图占位</title>
+  <rect width="720" height="1560" fill="#FDFBF7"/>
+  <rect x="60" y="40" width="600" height="1480" rx="52" fill="#FFFFFF" stroke="#2C2C2C" stroke-opacity="0.08" stroke-width="2"/>
+  <rect x="310" y="72" width="100" height="10" rx="5" fill="#2C2C2C" fill-opacity="0.1"/>
+
+  <text x="360" y="156" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="8" fill="#2C2C2C">STYLE DIARY</text>
+  <line x1="116" y1="192" x2="604" y2="192" stroke="#2C2C2C" stroke-opacity="0.08" stroke-width="2"/>
+  <text x="116" y="262" font-family="Georgia, serif" font-size="42" fill="#2C2C2C">搭配工坊</text>
+
+  <rect x="92" y="308" width="536" height="486" rx="24" fill="#F5F0E8"/>
+  <g fill="#FFFFFF">
+    <rect x="116" y="338" width="156" height="195" rx="12"/>
+    <rect x="292" y="338" width="156" height="195" rx="12"/>
+    <rect x="468" y="338" width="156" height="195" rx="12"/>
+  </g>
+  <g fill="#E9E1D4">
+    <rect x="116" y="338" width="156" height="195" rx="12"/>
+    <rect x="292" y="338" width="156" height="195" rx="12"/>
+  </g>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.5" text-anchor="middle">
+    <text x="194" y="562">上装</text>
+    <text x="370" y="562">下装</text>
+    <text x="546" y="562">鞋子</text>
+  </g>
+  <text x="628" y="562" text-anchor="end" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.5"> </text>
+
+  <g fill="#FFFFFF">
+    <rect x="116" y="590" width="112" height="112" rx="12"/>
+    <rect x="512" y="590" width="112" height="112" rx="12"/>
+  </g>
+  <g fill="#E9E1D4">
+    <rect x="116" y="590" width="112" height="112" rx="12"/>
+    <rect x="512" y="590" width="112" height="112" rx="12"/>
+  </g>
+  <text x="370" y="640" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.35">配饰位于长图两侧</text>
+  <text x="370" y="668" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="17" fill="#2C2C2C" fill-opacity="0.35">上身靠左 · 下身靠右</text>
+
+  <rect x="116" y="726" width="508" height="46" rx="23" fill="#2C2C2C"/>
+  <text x="370" y="756" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="20" fill="#FFFFFF">保存这套搭配</text>
+
+  <text x="116" y="852" font-family="Helvetica, Arial, sans-serif" font-size="21" fill="#2C2C2C">选择单品</text>
+  <g fill="#F5F0E8">
+    <rect x="116" y="872" width="118" height="118" rx="12"/>
+    <rect x="246" y="872" width="118" height="118" rx="12"/>
+    <rect x="376" y="872" width="118" height="118" rx="12"/>
+    <rect x="506" y="872" width="118" height="118" rx="12"/>
+    <rect x="116" y="1002" width="118" height="118" rx="12"/>
+    <rect x="246" y="1002" width="118" height="118" rx="12"/>
+    <rect x="376" y="1002" width="118" height="118" rx="12"/>
+    <rect x="506" y="1002" width="118" height="118" rx="12"/>
+  </g>
+
+  <text x="116" y="1180" font-family="Helvetica, Arial, sans-serif" font-size="21" fill="#2C2C2C">历史搭配记录</text>
+  <g fill="#F5F0E8">
+    <rect x="116" y="1200" width="160" height="180" rx="12"/>
+    <rect x="290" y="1200" width="160" height="180" rx="12"/>
+    <rect x="464" y="1200" width="160" height="180" rx="12"/>
+  </g>
+
+  <line x1="60" y1="1424" x2="660" y2="1424" stroke="#2C2C2C" stroke-opacity="0.06" stroke-width="2"/>
+  <g font-family="Helvetica, Arial, sans-serif" font-size="22" text-anchor="middle">
+    <text x="180" y="1480" fill="#2C2C2C" fill-opacity="0.4">衣橱</text>
+    <text x="360" y="1480" fill="#2C2C2C">搭配工坊</text>
+    <text x="540" y="1480" fill="#2C2C2C" fill-opacity="0.4">灵感墙</text>
+  </g>
+
+  <text x="360" y="1554" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" fill="#2C2C2C" fill-opacity="0.3">截图占位 · 同名 PNG 替换即可</text>
+</svg>
